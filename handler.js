@@ -1,5 +1,15 @@
 'use strict';
 
+
+module.exports.checkWallet = async(event) =>{
+return 'noramal transactions'
+}
+
+
+module.exports.getNormalTransactions = async(event) =>{
+  return 'normal transactions'
+}
+
 module.exports.hello = async (event) => {
   return {
     statusCode: 200,
@@ -13,6 +23,4 @@ module.exports.hello = async (event) => {
     ),
   };
 
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
 };

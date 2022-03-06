@@ -1,0 +1,380 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CheckWalletLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/serverless-step-function-example-dev-checkWallet"
+      }
+    },
+    "GetNormalTransactionsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/serverless-step-function-example-dev-getNormalTransactions"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "serverless-step-function-example",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/serverless-step-function-example-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/serverless-step-function-example-dev*:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "serverless-step-function-example",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "CheckWalletLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/serverless-step-function-example/dev/1646596395494-2022-03-06T19:53:15.494Z/serverless-step-function-example.zip"
+        },
+        "Handler": "handler.checkWallet",
+        "Runtime": "nodejs12.x",
+        "FunctionName": "serverless-step-function-example-dev-checkWallet",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CheckWalletLogGroup"
+      ]
+    },
+    "GetNormalTransactionsLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/serverless-step-function-example/dev/1646596395494-2022-03-06T19:53:15.494Z/serverless-step-function-example.zip"
+        },
+        "Handler": "handler.getNormalTransactions",
+        "Runtime": "nodejs12.x",
+        "FunctionName": "serverless-step-function-example-dev-getNormalTransactions",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "GetNormalTransactionsLogGroup"
+      ]
+    },
+    "CheckWalletLambdaVersion9ZChxOrPB9nhBsPZC70FdGt3SC6pnyotBTota16IXY": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CheckWalletLambdaFunction"
+        },
+        "CodeSha256": "I+Q/8Q4cmEa/8QZ2/0XEOQsB+MIJb4uzA9GKi+E6KA4="
+      }
+    },
+    "GetNormalTransactionsLambdaVersionfrlOv1nGBp7D5qax7ZVjHGnVpbc5SbMFgqdG4Xk": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GetNormalTransactionsLambdaFunction"
+        },
+        "CodeSha256": "I+Q/8Q4cmEa/8QZ2/0XEOQsB+MIJb4uzA9GKi+E6KA4="
+      }
+    },
+    "ProcessWalletFlowRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::Sub": "states.${AWS::Region}.amazonaws.com"
+                }
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "dev-serverless-step-function-example-statemachine",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "CheckWalletLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${functionArn}:*",
+                        {
+                          "functionArn": {
+                            "Fn::GetAtt": [
+                              "CheckWalletLambdaFunction",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "GetNormalTransactionsLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${functionArn}:*",
+                        {
+                          "functionArn": {
+                            "Fn::GetAtt": [
+                              "GetNormalTransactionsLambdaFunction",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ProcessWalletFlow": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Sub": [
+            "{\n  \"StartAt\": \"checkWallet\",\n  \"States\": {\n    \"checkWallet\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"${5334b86a504247a5a5401454809873a5}\",\n      \"Next\": \"getNormalTransactions\"\n    },\n    \"getNormalTransactions\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"${49018341298050cb55bcdd2d6bde31fb}\",\n      \"End\": true\n    }\n  }\n}",
+            {
+              "5334b86a504247a5a5401454809873a5": {
+                "Fn::GetAtt": [
+                  "CheckWalletLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "49018341298050cb55bcdd2d6bde31fb": {
+                "Fn::GetAtt": [
+                  "GetNormalTransactionsLambdaFunction",
+                  "Arn"
+                ]
+              }
+            }
+          ]
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "ProcessWalletFlowRole",
+            "Arn"
+          ]
+        },
+        "StateMachineName": "processWalletFlow"
+      },
+      "DependsOn": [
+        "ProcessWalletFlowRole"
+      ]
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-serverless-step-function-example-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "CheckWalletLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CheckWalletLambdaVersion9ZChxOrPB9nhBsPZC70FdGt3SC6pnyotBTota16IXY"
+      },
+      "Export": {
+        "Name": "sls-serverless-step-function-example-dev-CheckWalletLambdaFunctionQualifiedArn"
+      }
+    },
+    "GetNormalTransactionsLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "GetNormalTransactionsLambdaVersionfrlOv1nGBp7D5qax7ZVjHGnVpbc5SbMFgqdG4Xk"
+      },
+      "Export": {
+        "Name": "sls-serverless-step-function-example-dev-GetNormalTransactionsLambdaFunctionQualifiedArn"
+      }
+    },
+    "ProcessWalletFlowArn": {
+      "Description": "Current StateMachine Arn",
+      "Value": {
+        "Ref": "ProcessWalletFlow"
+      },
+      "Export": {
+        "Name": "sls-serverless-step-function-example-dev-ProcessWalletFlowArn"
+      }
+    }
+  }
+}
